@@ -4,26 +4,34 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
 )
 
+var DryRun bool
+
 func Keygen(ctx context.Context, keyPath, comment, pass string) error {
 	args := []string{"-t", "ed25519", "-o", "-a", "100", "-C", comment, "-f", keyPath, "-N", pass}
 	cmd := exec.CommandContext(ctx, "ssh-keygen", args...)
 	cmd.Stdin = nil
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
 	return cmd.Run()
 }
 
-func AgentAdd(ctx context.Context, keyPath, ttl, pass string) error {
+func AgentAdd(ctx context.Context, keyPath, ttl, pass string, dryRun bool) error {
 	args := []string{}
 	if ttl != "0" {
 		args = append(args, "-t", ttl)
 	}
 	args = append(args, keyPath)
+
+	if dryRun {
+		fmt.Println("🔬 Dry-run: would run:", "ssh-add", args)
+		return nil
+	}
 
 	if runtime.GOOS == "darwin" {
 		// seed Keychain with the passphrase so --apple-use-keychain can consume it non-interactively

@@ -1,4 +1,4 @@
-BINARY := keysej
+BINARY := bin/keysej
 PKG := github.com/repsejnworb/keysej
 
 .PHONY: build run tidy fmt vet

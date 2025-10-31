@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"context"
-	"os"
-	"os/user"
 	"path/filepath"
 	"time"
 
@@ -21,9 +19,7 @@ var installCmd = &cobra.Command{
 		if err := osutil.ValidateName(name); err != nil {
 			return err
 		}
-		u, _ := user.Current()
-		home := os.Getenv("HOME")
-		pub := filepath.Join(home, ".ssh", "id_ed25519_"+name+".pub")
+		pub := filepath.Join(osutil.SSHDir, "id_ed25519_"+name+".pub")
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
 		return shell.InstallPubkey(ctx, pub, target)
