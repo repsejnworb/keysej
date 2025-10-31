@@ -1,20 +1,30 @@
 name: release-please
 on:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+
 permissions:
   contents: write
   pull-requests: write
   id-token: write
-concurrency:
-  group: release-please
-  cancel-in-progress: false
+
 jobs:
   release:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Release Please
+      - name: Run Release Please (manifest)
+        id: rp
         uses: googleapis/release-please-action@v4
         with:
           command: manifest
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge (squash)
+        if: ${{ steps.rp.outputs['pull-request-number'] }}
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.rp.outputs['pull-request-number'] }}
+          merge-method: squash
