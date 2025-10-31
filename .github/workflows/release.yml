@@ -5,8 +5,6 @@ on:
 
 permissions:
   contents: write
-  issues: write
-  pull-requests: write
 
 jobs:
   ci:
@@ -15,18 +13,19 @@ jobs:
   release:
     needs: ci
     runs-on: ubuntu-latest
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
-      - uses: actions/setup-go@v5
-        with: { go-version: '>=1.22' }
-
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-
-      - name: Install semantic-release toolchain
-        run: npm i -g semantic-release @semantic-release/git @semantic-release/changelog @semantic-release/github @semantic-release/exec
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
 
       - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@v6
@@ -36,4 +35,12 @@ jobs:
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+        run: |
+          npx --yes -p semantic-release \
+                  -p @semantic-release/commit-analyzer \
+                  -p @semantic-release/release-notes-generator \
+                  -p @semantic-release/changelog \
+                  -p @semantic-release/git \
+                  -p @semantic-release/github \
+                  -p @semantic-release/exec \
+            semantic-release
