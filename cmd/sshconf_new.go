@@ -17,10 +17,9 @@ var (
 var sshconfNewCmd = &cobra.Command{
 	Use:   "new <key> <host-or-cidr>",
 	Short: "Create or update a rule for a key (Host pattern or CIDR Match)",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(2), // ← keep this
 	RunE: func(cmd *cobra.Command, args []string) error {
-		key := args[0]
-		pattern := args[1]
+		key, pattern := args[0], args[1]
 
 		if !newForce {
 			if err := sshconf.AssertKeysejKeyExists(args[0]); err != nil {
