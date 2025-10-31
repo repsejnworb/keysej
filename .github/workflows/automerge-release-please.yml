@@ -80,7 +80,7 @@ jobs:
       # Wait for PR CI to pass (repeat this step if you have multiple required checks)
       - name: Wait for PR CI
         if: steps.gate.outputs.ok == 'true'
-        uses: lewagon/wait-on-check-action@v1
+        uses: lewagon/wait-on-check-action@v1.4.1
         with:
           ref: ${{ steps.ctx.outputs.headSha }}
           # MUST match exactly what's shown on the PR Checks tab, e.g. "ci / test"
