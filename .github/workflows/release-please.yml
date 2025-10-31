@@ -1,7 +1,7 @@
 name: release-please
 on:
   workflow_run:
-    workflows: ["ci"]
+    workflows: ["ci"]         # runs after your push CI
     types: [completed]
 
 permissions:
@@ -20,12 +20,13 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Enable PR auto-merge (squash)
+      # Merge immediately (no auto-merge). Works without branch protection.
+      - name: Squash-merge the Release Please PR
         if: ${{ steps.rp.outputs.pr != '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          pr_number=$(echo '${{ steps.rp.outputs.pr }}' | jq -r '.number')
-          echo "Enabling auto-merge for release PR #$pr_number in $GH_REPO"
-          gh pr merge --auto --squash "$pr_number" --repo "$GH_REPO"
+          pr=$(echo '${{ steps.rp.outputs.pr }}' | jq -r '.number')
+          echo "Merging release PR #$pr in $GH_REPO"
+          gh pr merge --squash --delete-branch --repo "$GH_REPO" "$pr"
