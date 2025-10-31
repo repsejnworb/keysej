@@ -29,8 +29,8 @@ archives:
       - README.md
       - completions/* # if you generate static completions later
 
-checksums:
-  name_template: 'checksums.txt'
+checksum:
+  name_template: "checksums.txt"
 
 signs:
   - artifacts: checksum
