@@ -21,10 +21,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Enable PR auto-merge (squash)
-        if: ${{ steps.rp.outputs.prs_created == 'true' }}
+        if: ${{ steps.rp.outputs.pr != '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           pr_number=$(echo '${{ steps.rp.outputs.pr }}' | jq -r '.number')
-          echo "Enabling auto-merge for release PR #$pr_number"
-          gh pr merge --auto --squash "$pr_number"
+          echo "Enabling auto-merge for release PR #$pr_number in $GH_REPO"
+          gh pr merge --auto --squash "$pr_number" --repo "$GH_REPO"
