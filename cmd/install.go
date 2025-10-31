@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/repsejnworb/keysej/internal/config"
 	"github.com/repsejnworb/keysej/internal/osutil"
 	"github.com/repsejnworb/keysej/internal/shell"
 	"github.com/spf13/cobra"
@@ -19,7 +20,7 @@ var installCmd = &cobra.Command{
 		if err := osutil.ValidateName(name); err != nil {
 			return err
 		}
-		pub := filepath.Join(osutil.SSHDir, "id_ed25519_"+name+".pub")
+		pub := filepath.Join(config.C.SSHDir, "id_ed25519_"+name+".pub")
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
 		return shell.InstallPubkey(ctx, pub, target)

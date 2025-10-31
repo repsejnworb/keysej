@@ -4,14 +4,22 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/repsejnworb/keysej/internal/version"
 	"github.com/spf13/cobra"
+
+	"github.com/repsejnworb/keysej/internal/config"
+)
+
+var (
+	flagSSHDir string
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "keysej",
 	Short: "A tiny, secure SSH key helper",
-	Long:  "keysej wraps OpenSSH for key generation, agent add, install, and config with a nice TUI.",
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Initialize config once for all subcommands.
+		return config.Init(flagSSHDir)
+	},
 }
 
 func Execute() {
@@ -22,7 +30,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.SilenceUsage = true
-	rootCmd.SilenceErrors = true
-	rootCmd.Version = version.String()
+	rootCmd.PersistentFlags().StringVar(&flagSSHDir, "ssh-dir", "", "SSH directory (default $HOME/.ssh or $KEYSEJ_SSH_DIR)")
 }

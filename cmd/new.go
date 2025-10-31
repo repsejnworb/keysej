@@ -10,6 +10,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/repsejnworb/keysej/internal/config"
 	"github.com/repsejnworb/keysej/internal/osutil"
 	"github.com/repsejnworb/keysej/internal/shell"
 	"github.com/repsejnworb/keysej/internal/tui"
@@ -31,9 +32,16 @@ var newCmd = &cobra.Command{
 			return err
 		}
 
-		// Init SSHDir (temp when dry-run) and set shell dry-run
-		if err := osutil.InitSSHDir(dryRun); err != nil {
-			return err
+		sshDir := config.C.SSHDir
+
+		// If dry-run, create a temp dir but DO NOT mutate global config.
+		if dryRun {
+			tmp, err := os.MkdirTemp("", "keysej_ssh_*")
+			if err != nil {
+				return err
+			}
+			fmt.Println("🔬 Dry-run: using temporary SSH dir:", tmp)
+			sshDir = tmp
 		}
 		shell.DryRun = dryRun
 
@@ -42,7 +50,7 @@ var newCmd = &cobra.Command{
 		date := time.Now().Format("2006-01-02")
 		comment := fmt.Sprintf("%s@%s::%s::keysej::%s", u.Username, host, date, name)
 
-		keyPath := filepath.Join(osutil.SSHDir, "id_ed25519_"+name)
+		keyPath := filepath.Join(sshDir, "id_ed25519_"+name)
 		pubPath := keyPath + ".pub"
 
 		m := tui.NewModel(name, comment, keyPath, pubPath, flagTTL)
@@ -65,7 +73,7 @@ var newCmd = &cobra.Command{
 		}
 
 		// 1) mkdir -p ~/.ssh ; chmod 700
-		if err := os.MkdirAll(filepath.Join(osutil.SSHDir), 0o700); err != nil {
+		if err := os.MkdirAll(filepath.Join(sshDir), 0o700); err != nil {
 			return err
 		}
 
