@@ -6,7 +6,7 @@
     "@semantic-release/release-notes-generator",
 
     ["@semantic-release/exec", {
-      "prepareCmd": "GORELEASER_CURRENT_TAG=v${nextRelease.version} goreleaser release --clean --skip=publish"
+      "prepareCmd": "GORELEASER_CURRENT_TAG=v${nextRelease.version} goreleaser release --clean --skip=publish --skip=validate"
     }],
 
     ["@semantic-release/changelog", { "changelogFile": "CHANGELOG.md" }],
