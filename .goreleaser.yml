@@ -1,3 +1,4 @@
+version: 2
 project_name: keysej
 
 before:
@@ -6,11 +7,11 @@ before:
 
 builds:
   - id: keysej
-    main: ./cmd/keysej # adjust if your main package path is different
+    main: ./main.go # adjust if your main package path is different
     binary: keysej
     env:
       - CGO_ENABLED=0
-    goos: [ linux, darwin, windows ]
+    goos: [ linux, darwin ]
     goarch: [ amd64, arm64 ]
     ldflags:
       - -s -w
@@ -22,11 +23,7 @@ builds:
 
 archives:
   - id: archives
-    name_template: >-
-      {{ .ProjectName }}_{{ .Version }}_{{- tolower .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}
-    format_overrides:
-      - goos: windows
-        format: zip
+    name_template: "keysej_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - LICENSE
       - README.md
