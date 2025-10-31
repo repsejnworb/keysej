@@ -14,17 +14,17 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Run Release Please (manifest)
+      - name: Run Release Please
         id: rp
         uses: googleapis/release-please-action@v4
         with:
-          command: manifest
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Enable auto-merge (squash)
+      - name: Enable PR auto-merge (squash)
         if: ${{ steps.rp.outputs['pull-request-number'] }}
-        uses: peter-evans/enable-pull-request-automerge@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ steps.rp.outputs['pull-request-number'] }}
-          merge-method: squash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pr="${{ steps.rp.outputs['pull-request-number'] }}"
+          echo "Enabling auto-merge for PR #$pr"
+          gh pr merge --auto --squash "$pr"
