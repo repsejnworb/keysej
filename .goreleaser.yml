@@ -1,0 +1,47 @@
+project_name: keysej
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: keysej
+    main: ./cmd/keysej # adjust if your main package path is different
+    binary: keysej
+    env:
+      - CGO_ENABLED=0
+    goos: [ linux, darwin, windows ]
+    goarch: [ amd64, arm64 ]
+    ldflags:
+      - -s -w
+      - -X main.version={{.Tag}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    flags:
+      - -trimpath
+
+archives:
+  - id: archives
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{- tolower .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+      - completions/* # if you generate static completions later
+
+checksums:
+  name_template: 'checksums.txt'
+
+signs:
+  - artifacts: checksum
+
+changelog:
+  use: github
+  sort: asc
+
+release:
+  draft: false
+  prerelease: false
