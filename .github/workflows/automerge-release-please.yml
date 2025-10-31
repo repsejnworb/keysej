@@ -2,14 +2,23 @@ name: automerge-release-please
 on:
   pull_request:
     types: [opened, reopened, labeled, synchronize]
+
 permissions:
   contents: write
   pull-requests: write
+
 jobs:
   enable-automerge:
+    # Require BOTH: (a) PR opened by the bot AND (b) has the label
     if: >
-      github.actor == 'release-please[bot]' ||
-      contains(join(fromJSON(toJSON(github.event.pull_request.labels)).*.name, ','), 'autorelease: pending')
+      (
+        github.event.pull_request.user.login == 'github-actions[bot]' ||
+        github.event.pull_request.user.login == 'release-please[bot]'
+      ) &&
+      contains(
+        join(fromJSON(toJSON(github.event.pull_request.labels)).*.name, ','),
+        'autorelease: pending'
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Enable auto-merge (squash)
