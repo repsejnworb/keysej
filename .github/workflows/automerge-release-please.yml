@@ -9,31 +9,35 @@ permissions:
 
 jobs:
   automerge:
-    if: >
-      github.event.pull_request.base.ref == 'main' &&
-      (
-        github.event.pull_request.user.login == 'github-actions[bot]' ||
-        github.event.pull_request.user.login == 'release-please[bot]'
-      ) &&
-      contains(
-        join(fromJSON(toJSON(github.event.pull_request.labels)).*.name, ','),
-        'autorelease: pending'
-      )
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for PR CI (unit tests)
+      - name: Debug PR labels
+        run: echo '${{ toJSON(github.event.pull_request.labels) }}'
+
+      - name: Gate on RP author + label
+        if: >
+          (
+            github.event.pull_request.user.login == 'github-actions[bot]' ||
+            github.event.pull_request.user.login == 'release-please[bot]'
+          ) &&
+          contains(toJSON(github.event.pull_request.labels.*.name), 'autorelease: pending') &&
+          github.event.pull_request.base.ref == 'main'
+        run: echo "Gate passed"
+
+      - name: Wait for PR CI
+        if: always() && steps.gate.outcome == 'success'
         uses: lewagon/wait-on-check-action@v1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          # MUST match the check name exactly as shown on the PR (e.g. "ci / test")
           check-name: "ci / test"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
           allowed-conclusions: success
 
-      - name: Merge the PR (squash)
+      - name: Merge (squash)
+        if: always() && steps.gate.outcome == 'success'
         uses: peter-evans/merge-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          merge-method: squash
           pull-request: ${{ github.event.pull_request.number }}
+          merge-method: squash
