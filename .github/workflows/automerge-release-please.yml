@@ -1,9 +1,7 @@
 name: automerge-release-please
-
 on:
-  workflow_run:
-    workflows: ["ci"]
-    types: [completed]
+  pull_request:
+    types: [opened, reopened, labeled, synchronize]
 
 permissions:
   contents: write
@@ -12,46 +10,28 @@ permissions:
 jobs:
   automerge:
     if: >
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.conclusion == 'success'
+      (
+        github.event.pull_request.user.login == 'github-actions[bot]' ||
+        github.event.pull_request.user.login == 'release-please[bot]'
+      ) &&
+      contains(
+        join(fromJSON(toJSON(github.event.pull_request.labels)).*.name, ','),
+        'autorelease: pending'
+      )
     runs-on: ubuntu-latest
-
     steps:
-      - name: Download PR data
-        id: pr
-        uses: actions/github-script@v7
+      - name: Wait for PR CI to pass
+        uses: lewagon/wait-on-check-action@v1
         with:
-          script: |
-            const run = context.payload.workflow_run;
-            const prs = run.pull_requests || [];
-            if (prs.length === 0) {
-              core.setOutput('found', 'false');
-              return;
-            }
-            const prNum = prs[0].number;
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNum,
-            });
-            core.setOutput('found', 'true');
-            core.setOutput('number', prNum);
-            core.setOutput('author', pr.user.login);
-            core.setOutput('labels', pr.labels.map(l => l.name).join(','));
-      - name: Stop if no PR info
-        if: steps.pr.outputs.found != 'true'
-        run: echo "No PR linked to this CI run"
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-name: "ci"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success
 
-      - name: Enable auto-merge (squash)
-        if: >
-          steps.pr.outputs.found == 'true' &&
-          (
-            steps.pr.outputs.author == 'github-actions[bot]' ||
-            steps.pr.outputs.author == 'release-please[bot]'
-          ) &&
-          contains(steps.pr.outputs.labels, 'autorelease: pending')
-        uses: peter-evans/enable-pull-request-automerge@v3
+      - name: Merge the PR (squash)
+        uses: peter-evans/merge-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ steps.pr.outputs.number }}
           merge-method: squash
+          pull-request: ${{ github.event.pull_request.number }}
