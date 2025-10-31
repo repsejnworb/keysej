@@ -10,6 +10,7 @@ permissions:
 jobs:
   automerge:
     if: >
+      github.event.pull_request.base.ref == 'main' &&
       (
         github.event.pull_request.user.login == 'github-actions[bot]' ||
         github.event.pull_request.user.login == 'release-please[bot]'
@@ -20,11 +21,12 @@ jobs:
       )
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for PR CI to pass
+      - name: Wait for PR CI (unit tests)
         uses: lewagon/wait-on-check-action@v1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          check-name: "ci"
+          # MUST match the check name exactly as shown on the PR (e.g. "ci / test")
+          check-name: "ci / test"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
           allowed-conclusions: success
