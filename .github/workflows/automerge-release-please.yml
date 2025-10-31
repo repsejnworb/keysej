@@ -1,7 +1,15 @@
 name: automerge-release-please
 on:
   pull_request_target:
-    types: [opened, reopened, labeled, synchronize, edited, ready_for_review]
+    types:
+      - opened
+      - reopened
+      - labeled
+      - unlabeled
+      - synchronize     # RP pushes commits to its PR → this is the key event
+      - edited
+      - ready_for_review
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -9,33 +17,41 @@ permissions:
 
 jobs:
   automerge:
+    # Gate only inside steps so we can always dump debug info
     runs-on: ubuntu-latest
     steps:
-      - name: Debug PR labels
-        run: echo '${{ toJSON(github.event.pull_request.labels) }}'
+      - name: Debug PR basics
+        run: |
+          echo "base:   ${{ github.event.pull_request.base.ref }}"
+          echo "author: ${{ github.event.pull_request.user.login }}"
+          echo "labels: ${{ toJSON(github.event.pull_request.labels) }}"
+          echo "head:   ${{ github.event.pull_request.head.sha }}"
 
-      - name: Gate on RP author + label
-        if: >
-          (
-            github.event.pull_request.user.login == 'github-actions[bot]' ||
-            github.event.pull_request.user.login == 'release-please[bot]'
-          ) &&
-          contains(toJSON(github.event.pull_request.labels.*.name), 'autorelease: pending') &&
-          github.event.pull_request.base.ref == 'main'
-        run: echo "Gate passed"
+      - name: Gate (RP author + label + base=main)
+        id: gate
+        run: |
+          echo "ok=false" >> $GITHUB_OUTPUT
+          author='${{ github.event.pull_request.user.login }}'
+          labels='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+          base='${{ github.event.pull_request.base.ref }}'
+          if { [ "$author" = "github-actions[bot]" ] || [ "$author" = "release-please[bot]" ]; } \
+             && echo "$labels" | grep -q '"autorelease: pending"' \
+             && [ "$base" = "main" ]; then
+            echo "ok=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Wait for PR CI
-        if: always() && steps.gate.outcome == 'success'
+        if: steps.gate.outputs.ok == 'true'
         uses: lewagon/wait-on-check-action@v1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          check-name: "ci / test"
+          check-name: "ci / test"    # EXACT name from PR Checks tab
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
           allowed-conclusions: success
 
-      - name: Merge (squash)
-        if: always() && steps.gate.outcome == 'success'
+      - name: Merge the PR (squash)
+        if: steps.gate.outputs.ok == 'true'
         uses: peter-evans/merge-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
