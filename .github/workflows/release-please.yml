@@ -19,14 +19,3 @@ jobs:
         uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      # Merge immediately (no auto-merge). Works without branch protection.
-      - name: Squash-merge the Release Please PR
-        if: ${{ steps.rp.outputs.pr != '' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          pr=$(echo '${{ steps.rp.outputs.pr }}' | jq -r '.number')
-          echo "Merging release PR #$pr in $GH_REPO"
-          gh pr merge --squash --delete-branch --repo "$GH_REPO" "$pr"
